@@ -69,6 +69,14 @@ class WordPressImageReplacer:
         self.password_var.set(self.config.get("app_password", ""))
         self.folder_var.set(self.config.get("webp_folder", ""))
 
+        # Log loaded config (without password)
+        if self.config:
+            print("Loaded config from config.json:")
+            print(f"  WordPress URL: {self.config.get('wordpress_url', 'NOT SET')}")
+            print(f"  Username: {self.config.get('username', 'NOT SET')}")
+            print(f"  Password: {'***' if self.config.get('app_password') else 'NOT SET'}")
+            print(f"  WebP Folder: {self.config.get('webp_folder', 'NOT SET')}")
+
     def create_widgets(self):
         """Create all GUI widgets."""
         # Main container with padding
@@ -133,11 +141,13 @@ class WordPressImageReplacer:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=row, column=0, columnspan=2, pady=10)
 
+        ttk.Button(button_frame, text="Test Connection", command=self.test_connection).grid(row=0, column=0, padx=5)
+
         self.start_button = ttk.Button(button_frame, text="Start Replacement", command=self.start_replacement)
-        self.start_button.grid(row=0, column=0, padx=5)
+        self.start_button.grid(row=0, column=1, padx=5)
 
         self.stop_button = ttk.Button(button_frame, text="Stop", command=self.stop_replacement, state=tk.DISABLED)
-        self.stop_button.grid(row=0, column=1, padx=5)
+        self.stop_button.grid(row=0, column=2, padx=5)
 
         row += 1
 
@@ -184,6 +194,52 @@ class WordPressImageReplacer:
         folder = filedialog.askdirectory(title="Select WebP Folder")
         if folder:
             self.folder_var.set(folder)
+
+    def test_connection(self):
+        """Test WordPress connection without starting replacement."""
+        if not all([self.url_var.get(), self.username_var.get(), self.password_var.get()]):
+            messagebox.showerror("Error", "Please fill in WordPress URL, Username, and App Password")
+            return
+
+        self.log("Testing connection...")
+
+        try:
+            # Strip spaces from app password (common issue)
+            app_password = self.password_var.get().replace(" ", "")
+
+            api = WordPressAPI(
+                self.url_var.get(),
+                self.username_var.get(),
+                app_password
+            )
+
+            success, message = api.test_connection()
+
+            if success:
+                self.log("✓ Connection successful!")
+                messagebox.showinfo("Success", "Connected to WordPress successfully!")
+            else:
+                self.log(f"✗ Connection failed: {message}")
+
+                # Provide specific help for common errors
+                if "406" in message:
+                    help_text = (
+                        f"{message}\n\n"
+                        "Common causes for 406 error:\n"
+                        "• Application Passwords not enabled in WordPress\n"
+                        "• REST API disabled by security plugin\n"
+                        "• Application password has spaces (remove all spaces)\n"
+                        "• Wrong username (use username, not email)\n\n"
+                        "To enable Application Passwords:\n"
+                        "WordPress Admin → Users → Profile → Application Passwords"
+                    )
+                    messagebox.showerror("Connection Failed", help_text)
+                else:
+                    messagebox.showerror("Connection Failed", message)
+
+        except Exception as e:
+            self.log(f"✗ Error: {str(e)}")
+            messagebox.showerror("Error", f"Connection test failed: {str(e)}")
 
     def log(self, message: str):
         """
@@ -278,10 +334,14 @@ class WordPressImageReplacer:
         try:
             # Initialize API
             self.log("Initializing WordPress API...")
+
+            # Strip spaces from app password (common issue)
+            app_password = self.password_var.get().replace(" ", "")
+
             self.api = WordPressAPI(
                 self.url_var.get(),
                 self.username_var.get(),
-                self.password_var.get()
+                app_password
             )
 
             # Test connection
@@ -289,6 +349,15 @@ class WordPressImageReplacer:
             success, message = self.api.test_connection()
             if not success:
                 self.log(f"ERROR: {message}")
+
+                # Provide specific help for common errors
+                if "406" in message:
+                    self.log("Common causes for 406 error:")
+                    self.log("  • Application Passwords not enabled in WordPress")
+                    self.log("  • REST API disabled by security plugin")
+                    self.log("  • Application password has spaces (remove all spaces)")
+                    self.log("  • Wrong username (use username, not email)")
+
                 self.finish_replacement()
                 return
 
