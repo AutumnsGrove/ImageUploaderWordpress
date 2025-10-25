@@ -69,13 +69,8 @@ class WordPressImageReplacer:
         self.password_var.set(self.config.get("app_password", ""))
         self.folder_var.set(self.config.get("webp_folder", ""))
 
-        # Log loaded config (without password)
-        if self.config:
-            print("Loaded config from config.json:")
-            print(f"  WordPress URL: {self.config.get('wordpress_url', 'NOT SET')}")
-            print(f"  Username: {self.config.get('username', 'NOT SET')}")
-            print(f"  Password: {'***' if self.config.get('app_password') else 'NOT SET'}")
-            print(f"  WebP Folder: {self.config.get('webp_folder', 'NOT SET')}")
+        # Log loaded config (without password) - must be done after GUI is created
+        # This will be called in create_widgets after log widget exists
 
     def create_widgets(self):
         """Create all GUI widgets."""
@@ -182,6 +177,14 @@ class WordPressImageReplacer:
         ttk.Button(bottom_frame, text="Export Log", command=self.export_log).grid(row=0, column=0, padx=5)
         ttk.Button(bottom_frame, text="Clear Log", command=self.clear_log).grid(row=0, column=1, padx=5)
 
+        # Log loaded config now that log widget exists
+        if self.config:
+            self.log("Loaded config from config.json:")
+            self.log(f"  WordPress URL: {self.config.get('wordpress_url', 'NOT SET')}")
+            self.log(f"  Username: {self.config.get('username', 'NOT SET')}")
+            self.log(f"  Password: {'***' if self.config.get('app_password') else 'NOT SET'}")
+            self.log(f"  WebP Folder: {self.config.get('webp_folder', 'NOT SET')}")
+
     def toggle_password(self):
         """Toggle password visibility."""
         if self.show_password_var.get():
@@ -201,11 +204,18 @@ class WordPressImageReplacer:
             messagebox.showerror("Error", "Please fill in WordPress URL, Username, and App Password")
             return
 
+        self.log("=" * 50)
         self.log("Testing connection...")
+        self.log(f"URL: {self.url_var.get()}")
+        self.log(f"Username: {self.username_var.get()}")
+        self.log(f"Password length: {len(self.password_var.get())} chars")
 
         try:
             # Strip spaces from app password (common issue)
             app_password = self.password_var.get().replace(" ", "")
+            spaces_removed = len(self.password_var.get()) - len(app_password)
+            if spaces_removed > 0:
+                self.log(f"Removed {spaces_removed} spaces from password")
 
             api = WordPressAPI(
                 self.url_var.get(),
@@ -217,21 +227,26 @@ class WordPressImageReplacer:
 
             if success:
                 self.log("✓ Connection successful!")
-                messagebox.showinfo("Success", "Connected to WordPress successfully!")
+                self.log(message)
+                messagebox.showinfo("Success", message)
             else:
-                self.log(f"✗ Connection failed: {message}")
+                self.log("✗ Connection failed!")
+                self.log(message)
 
                 # Provide specific help for common errors
                 if "406" in message:
                     help_text = (
                         f"{message}\n\n"
-                        "Common causes for 406 error:\n"
-                        "• Application Passwords not enabled in WordPress\n"
-                        "• REST API disabled by security plugin\n"
-                        "• Application password has spaces (remove all spaces)\n"
-                        "• Wrong username (use username, not email)\n\n"
-                        "To enable Application Passwords:\n"
-                        "WordPress Admin → Users → Profile → Application Passwords"
+                        "Troubleshooting steps:\n"
+                        "1. Check WordPress version (need 5.6+)\n"
+                        "2. Go to: Users → Your Profile → Application Passwords\n"
+                        "3. Create a new Application Password\n"
+                        "4. Copy it WITHOUT spaces\n"
+                        "5. Use your username (not email)\n\n"
+                        "If still failing, check:\n"
+                        "• Security plugins (disable temporarily)\n"
+                        "• .htaccess rules blocking Basic Auth\n"
+                        "• Server/CDN blocking REST API"
                     )
                     messagebox.showerror("Connection Failed", help_text)
                 else:

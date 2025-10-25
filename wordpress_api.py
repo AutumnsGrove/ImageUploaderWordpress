@@ -29,15 +29,43 @@ class WordPressAPI:
         Returns:
             Tuple of (success: bool, message: str)
         """
+        # First check if REST API is accessible at all
+        try:
+            rest_response = self.session.get(
+                f"{self.site_url}/wp-json/",
+                timeout=10,
+                auth=None  # No auth needed for discovery endpoint
+            )
+            if rest_response.status_code != 200:
+                return False, f"REST API not accessible (status {rest_response.status_code}). Check if REST API is enabled."
+        except requests.exceptions.RequestException as e:
+            return False, f"Cannot reach WordPress site: {str(e)}"
+
+        # Now test authentication
         try:
             response = self.session.get(
                 f"{self.site_url}/wp-json/wp/v2/users/me",
                 timeout=10
             )
             if response.status_code == 200:
-                return True, "Connection successful"
+                user_data = response.json()
+                username = user_data.get("name", "Unknown")
+                return True, f"Connection successful! Logged in as: {username}"
+            elif response.status_code == 406:
+                # Get more details about the 406 error
+                error_detail = ""
+                try:
+                    error_data = response.json()
+                    error_detail = f" - {error_data.get('message', '')}"
+                except:
+                    pass
+                return False, (
+                    f"Authentication failed: 406 Not Acceptable{error_detail}\n\n"
+                    "This usually means Application Passwords are not enabled.\n"
+                    "WordPress requires version 5.6+ or the Application Passwords plugin."
+                )
             else:
-                return False, f"Authentication failed: {response.status_code}"
+                return False, f"Authentication failed: {response.status_code} - {response.reason}"
         except requests.exceptions.RequestException as e:
             return False, f"Connection error: {str(e)}"
 
