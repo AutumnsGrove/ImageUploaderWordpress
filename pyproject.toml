@@ -1,0 +1,19 @@
+[project]
+name = "wordpress-image-replacer"
+version = "0.1.0"
+description = "Automate replacing PNG images with compressed WebP versions in WordPress media library"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "black>=24.0.0",
+    "pytest>=8.0.0",
+]
