@@ -54,7 +54,7 @@ class WordPressImageReplacer:
             "wordpress_url": self.url_var.get(),
             "username": self.username_var.get(),
             "app_password": self.password_var.get(),
-            "webp_folder": self.folder_var.get()
+            "webp_folder": self.folder_var.get(),
         }
         try:
             with open("config.json", "w") as f:
@@ -87,27 +87,39 @@ class WordPressImageReplacer:
         row = 0
 
         # WordPress URL
-        ttk.Label(main_frame, text="WordPress URL:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="WordPress URL:").grid(
+            row=row, column=0, sticky=tk.W, pady=5
+        )
         self.url_var = tk.StringVar()
-        ttk.Entry(main_frame, textvariable=self.url_var, width=50).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
+        ttk.Entry(main_frame, textvariable=self.url_var, width=50).grid(
+            row=row, column=1, sticky=(tk.W, tk.E), pady=5
+        )
 
         row += 1
 
         # Username
-        ttk.Label(main_frame, text="Username:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="Username:").grid(
+            row=row, column=0, sticky=tk.W, pady=5
+        )
         self.username_var = tk.StringVar()
-        ttk.Entry(main_frame, textvariable=self.username_var, width=50).grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
+        ttk.Entry(main_frame, textvariable=self.username_var, width=50).grid(
+            row=row, column=1, sticky=(tk.W, tk.E), pady=5
+        )
 
         row += 1
 
         # App Password
-        ttk.Label(main_frame, text="App Password:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="App Password:").grid(
+            row=row, column=0, sticky=tk.W, pady=5
+        )
         password_frame = ttk.Frame(main_frame)
         password_frame.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
         password_frame.columnconfigure(0, weight=1)
 
         self.password_var = tk.StringVar()
-        self.password_entry = ttk.Entry(password_frame, textvariable=self.password_var, show="*", width=40)
+        self.password_entry = ttk.Entry(
+            password_frame, textvariable=self.password_var, show="*", width=40
+        )
         self.password_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
 
         self.show_password_var = tk.BooleanVar()
@@ -115,20 +127,26 @@ class WordPressImageReplacer:
             password_frame,
             text="Show",
             variable=self.show_password_var,
-            command=self.toggle_password
+            command=self.toggle_password,
         ).grid(row=0, column=1)
 
         row += 1
 
         # WebP Folder
-        ttk.Label(main_frame, text="WebP Folder:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="WebP Folder:").grid(
+            row=row, column=0, sticky=tk.W, pady=5
+        )
         folder_frame = ttk.Frame(main_frame)
         folder_frame.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
         folder_frame.columnconfigure(0, weight=1)
 
         self.folder_var = tk.StringVar()
-        ttk.Entry(folder_frame, textvariable=self.folder_var, width=40).grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
-        ttk.Button(folder_frame, text="Browse...", command=self.browse_folder).grid(row=0, column=1)
+        ttk.Entry(folder_frame, textvariable=self.folder_var, width=40).grid(
+            row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5)
+        )
+        ttk.Button(folder_frame, text="Browse...", command=self.browse_folder).grid(
+            row=0, column=1
+        )
 
         row += 1
 
@@ -136,13 +154,27 @@ class WordPressImageReplacer:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=row, column=0, columnspan=2, pady=10)
 
-        ttk.Button(button_frame, text="Test Connection", command=self.test_connection).grid(row=0, column=0, padx=5)
+        ttk.Button(
+            button_frame, text="Test Connection", command=self.test_connection
+        ).grid(row=0, column=0, padx=5)
+        ttk.Button(
+            button_frame, text="Run Full Diagnostics", command=self.run_full_diagnostics
+        ).grid(row=0, column=1, padx=5)
+        ttk.Button(
+            button_frame,
+            text="Help: Setup App Password",
+            command=self.show_app_password_help,
+        ).grid(row=0, column=2, padx=5)
 
-        self.start_button = ttk.Button(button_frame, text="Start Replacement", command=self.start_replacement)
-        self.start_button.grid(row=0, column=1, padx=5)
+        self.start_button = ttk.Button(
+            button_frame, text="Start Replacement", command=self.start_replacement
+        )
+        self.start_button.grid(row=0, column=3, padx=5)
 
-        self.stop_button = ttk.Button(button_frame, text="Stop", command=self.stop_replacement, state=tk.DISABLED)
-        self.stop_button.grid(row=0, column=2, padx=5)
+        self.stop_button = ttk.Button(
+            button_frame, text="Stop", command=self.stop_replacement, state=tk.DISABLED
+        )
+        self.stop_button.grid(row=0, column=4, padx=5)
 
         row += 1
 
@@ -153,8 +185,12 @@ class WordPressImageReplacer:
 
         row += 1
 
-        self.progress_bar = ttk.Progressbar(main_frame, variable=self.progress_var, maximum=100)
-        self.progress_bar.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        self.progress_bar = ttk.Progressbar(
+            main_frame, variable=self.progress_var, maximum=100
+        )
+        self.progress_bar.grid(
+            row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5
+        )
 
         row += 1
 
@@ -164,8 +200,12 @@ class WordPressImageReplacer:
 
         row += 1
 
-        self.log_text = scrolledtext.ScrolledText(main_frame, height=15, width=80, state=tk.DISABLED)
-        self.log_text.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
+        self.log_text = scrolledtext.ScrolledText(
+            main_frame, height=15, width=80, state=tk.DISABLED
+        )
+        self.log_text.grid(
+            row=row, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5
+        )
         main_frame.rowconfigure(row, weight=1)
 
         row += 1
@@ -174,15 +214,21 @@ class WordPressImageReplacer:
         bottom_frame = ttk.Frame(main_frame)
         bottom_frame.grid(row=row, column=0, columnspan=2, pady=10)
 
-        ttk.Button(bottom_frame, text="Export Log", command=self.export_log).grid(row=0, column=0, padx=5)
-        ttk.Button(bottom_frame, text="Clear Log", command=self.clear_log).grid(row=0, column=1, padx=5)
+        ttk.Button(bottom_frame, text="Export Log", command=self.export_log).grid(
+            row=0, column=0, padx=5
+        )
+        ttk.Button(bottom_frame, text="Clear Log", command=self.clear_log).grid(
+            row=0, column=1, padx=5
+        )
 
         # Log loaded config now that log widget exists
         if self.config:
             self.log("Loaded config from config.json:")
             self.log(f"  WordPress URL: {self.config.get('wordpress_url', 'NOT SET')}")
             self.log(f"  Username: {self.config.get('username', 'NOT SET')}")
-            self.log(f"  Password: {'***' if self.config.get('app_password') else 'NOT SET'}")
+            self.log(
+                f"  Password: {'***' if self.config.get('app_password') else 'NOT SET'}"
+            )
             self.log(f"  WebP Folder: {self.config.get('webp_folder', 'NOT SET')}")
 
     def toggle_password(self):
@@ -200,8 +246,12 @@ class WordPressImageReplacer:
 
     def test_connection(self):
         """Test WordPress connection without starting replacement."""
-        if not all([self.url_var.get(), self.username_var.get(), self.password_var.get()]):
-            messagebox.showerror("Error", "Please fill in WordPress URL, Username, and App Password")
+        if not all(
+            [self.url_var.get(), self.username_var.get(), self.password_var.get()]
+        ):
+            messagebox.showerror(
+                "Error", "Please fill in WordPress URL, Username, and App Password"
+            )
             return
 
         self.log("=" * 50)
@@ -218,9 +268,7 @@ class WordPressImageReplacer:
                 self.log(f"Removed {spaces_removed} spaces from password")
 
             api = WordPressAPI(
-                self.url_var.get(),
-                self.username_var.get(),
-                app_password
+                self.url_var.get(), self.username_var.get(), app_password
             )
 
             success, message = api.test_connection()
@@ -256,6 +304,144 @@ class WordPressImageReplacer:
             self.log(f"✗ Error: {str(e)}")
             messagebox.showerror("Error", f"Connection test failed: {str(e)}")
 
+    def run_full_diagnostics(self):
+        """Run comprehensive diagnostics and display results."""
+        if not all(
+            [self.url_var.get(), self.username_var.get(), self.password_var.get()]
+        ):
+            messagebox.showerror(
+                "Error", "Please fill in WordPress URL, Username, and App Password"
+            )
+            return
+
+        self.log("=" * 50)
+        self.log("RUNNING FULL DIAGNOSTICS")
+        self.log("=" * 50)
+
+        try:
+            # Strip spaces from app password
+            app_password = self.password_var.get().replace(" ", "")
+
+            api = WordPressAPI(
+                self.url_var.get(), self.username_var.get(), app_password
+            )
+
+            self.log("Testing connection to WordPress...")
+            diagnostics = api.run_diagnostics()
+
+            # Display test results
+            self.log("\nDIAGNOSTIC RESULTS:")
+            self.log("-" * 50)
+
+            for test in diagnostics["tests"]:
+                status_symbol = (
+                    "✓"
+                    if test["status"] == "pass"
+                    else ("⚠" if test["status"] == "warning" else "✗")
+                )
+                self.log(f"{status_symbol} {test['name']}: {test['message']}")
+
+            # Display overall status
+            self.log("-" * 50)
+            if diagnostics["overall_status"] == "pass":
+                self.log("OVERALL: All tests passed! ✓")
+                messagebox.showinfo(
+                    "Diagnostics Complete",
+                    "All tests passed! Your WordPress connection is ready.",
+                )
+            else:
+                self.log(f"OVERALL: Issues detected ({diagnostics['overall_status']})")
+
+                # Display recommendations
+                if diagnostics["recommendations"]:
+                    self.log("\nRECOMMENDATIONS:")
+                    self.log("-" * 50)
+                    for i, rec in enumerate(diagnostics["recommendations"], 1):
+                        self.log(f"{i}. {rec}")
+
+                    # Show in message box too
+                    rec_text = "\n".join(
+                        f"{i}. {rec}"
+                        for i, rec in enumerate(diagnostics["recommendations"], 1)
+                    )
+                    messagebox.showwarning(
+                        "Diagnostics Complete - Issues Found",
+                        f"Diagnostics found some issues:\n\n{rec_text[:500]}\n\nSee log for full details.",
+                    )
+
+            self.log("=" * 50)
+
+        except Exception as e:
+            self.log(f"✗ Error running diagnostics: {str(e)}")
+            messagebox.showerror("Error", f"Diagnostics failed: {str(e)}")
+
+    def show_app_password_help(self):
+        """Show help dialog for setting up Application Passwords."""
+        help_text = """HOW TO CREATE A WORDPRESS APPLICATION PASSWORD
+
+Step 1: Log into WordPress Admin
+• Go to your WordPress dashboard
+
+Step 2: Access Your Profile
+• Click your username (top-right corner)
+• Select "Edit Profile"
+• Or go to: Users → Your Profile
+
+Step 3: Find Application Passwords Section
+• Scroll down to "Application Passwords"
+• If you don't see this section:
+  - Check that your site URL starts with https://
+  - Verify WordPress is version 5.6 or later
+
+Step 4: Generate Password
+• Enter a name (e.g., "Image Replacer")
+• Click "Add New Application Password"
+• COPY the generated password immediately!
+• You won't be able to see it again
+
+Step 5: Use in This App
+• Username: Your WordPress username (NOT email)
+• App Password: Paste the password you just copied
+• Remove any spaces from the password
+
+TROUBLESHOOTING:
+• If Application Passwords section is missing:
+  → Your site must use HTTPS (SSL certificate required)
+  → WordPress must be version 5.6 or later
+
+• If you get 406 errors after creating password:
+  → Click "Run Full Diagnostics" button
+  → Follow the recommendations shown
+
+• Common mistakes:
+  → Using email address instead of username
+  → Using regular password instead of Application Password
+  → Leaving spaces in the Application Password
+  → Not using HTTPS
+
+Need more help? Click "Run Full Diagnostics" to identify issues."""
+
+        # Create a new window for help
+        help_window = tk.Toplevel(self.root)
+        help_window.title("Application Password Setup Help")
+        help_window.geometry("600x500")
+
+        # Add text widget with scrollbar
+        text_frame = ttk.Frame(help_window, padding="10")
+        text_frame.pack(fill=tk.BOTH, expand=True)
+
+        text_widget = scrolledtext.ScrolledText(
+            text_frame, wrap=tk.WORD, width=70, height=25
+        )
+        text_widget.pack(fill=tk.BOTH, expand=True)
+        text_widget.insert(1.0, help_text)
+        text_widget.config(state=tk.DISABLED)
+
+        # Add close button
+        button_frame = ttk.Frame(help_window, padding="10")
+        button_frame.pack()
+        ttk.Button(button_frame, text="Close", command=help_window.destroy).pack()
+
     def log(self, message: str):
         """
         Add message to log.
@@ -288,7 +474,7 @@ class WordPressImageReplacer:
         filename = filedialog.asksaveasfilename(
             defaultextension=".txt",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
-            initialfile=f"replacement_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            initialfile=f"replacement_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
         )
 
         if filename:
@@ -318,12 +504,14 @@ class WordPressImageReplacer:
     def start_replacement(self):
         """Start the replacement process in a separate thread."""
         # Validate inputs
-        if not all([
-            self.url_var.get(),
-            self.username_var.get(),
-            self.password_var.get(),
-            self.folder_var.get()
-        ]):
+        if not all(
+            [
+                self.url_var.get(),
+                self.username_var.get(),
+                self.password_var.get(),
+                self.folder_var.get(),
+            ]
+        ):
             messagebox.showerror("Error", "Please fill in all fields")
             return
 
@@ -354,9 +542,7 @@ class WordPressImageReplacer:
             app_password = self.password_var.get().replace(" ", "")
 
             self.api = WordPressAPI(
-                self.url_var.get(),
-                self.username_var.get(),
-                app_password
+                self.url_var.get(), self.username_var.get(), app_password
             )
 
             # Test connection
@@ -407,7 +593,9 @@ class WordPressImageReplacer:
                 self.log(f"Processing: {webp_file.name}")
 
                 # Find matching PNG
-                matching_media = ImageMatcher.find_matching_media(webp_file, media_items)
+                matching_media = ImageMatcher.find_matching_media(
+                    webp_file, media_items
+                )
 
                 if not matching_media:
                     self.log(f"  No matching PNG found for {webp_file.name}")
@@ -437,28 +625,38 @@ class WordPressImageReplacer:
                 all_content = posts + pages
 
                 # Find content with old URLs
-                matching_content = ContentUpdater.find_content_with_urls(all_content, old_urls)
+                matching_content = ContentUpdater.find_content_with_urls(
+                    all_content, old_urls
+                )
                 self.log(f"  Found {len(matching_content)} items to update")
 
                 # Update posts
-                posts_to_update = [c for c in matching_content if c.get("type") == "post"]
+                posts_to_update = [
+                    c for c in matching_content if c.get("type") == "post"
+                ]
                 if posts_to_update:
                     results = ContentUpdater.update_content_items(
                         self.api, posts_to_update, old_urls, new_url, "post"
                     )
                     for result in results:
                         if result["success"]:
-                            self.log(f"    Updated post: {result['title']} ({result['replacements']} replacements)")
+                            self.log(
+                                f"    Updated post: {result['title']} ({result['replacements']} replacements)"
+                            )
 
                 # Update pages
-                pages_to_update = [c for c in matching_content if c.get("type") == "page"]
+                pages_to_update = [
+                    c for c in matching_content if c.get("type") == "page"
+                ]
                 if pages_to_update:
                     results = ContentUpdater.update_content_items(
                         self.api, pages_to_update, old_urls, new_url, "page"
                     )
                     for result in results:
                         if result["success"]:
-                            self.log(f"    Updated page: {result['title']} ({result['replacements']} replacements)")
+                            self.log(
+                                f"    Updated page: {result['title']} ({result['replacements']} replacements)"
+                            )
 
                 successful_replacements += 1
 

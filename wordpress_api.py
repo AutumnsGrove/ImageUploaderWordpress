@@ -34,18 +34,20 @@ class WordPressAPI:
             rest_response = self.session.get(
                 f"{self.site_url}/wp-json/",
                 timeout=10,
-                auth=None  # No auth needed for discovery endpoint
+                auth=None,  # No auth needed for discovery endpoint
             )
             if rest_response.status_code != 200:
-                return False, f"REST API not accessible (status {rest_response.status_code}). Check if REST API is enabled."
+                return (
+                    False,
+                    f"REST API not accessible (status {rest_response.status_code}). Check if REST API is enabled.",
+                )
         except requests.exceptions.RequestException as e:
             return False, f"Cannot reach WordPress site: {str(e)}"
 
         # Now test authentication
         try:
             response = self.session.get(
-                f"{self.site_url}/wp-json/wp/v2/users/me",
-                timeout=10
+                f"{self.site_url}/wp-json/wp/v2/users/me", timeout=10
             )
             if response.status_code == 200:
                 user_data = response.json()
@@ -65,9 +67,160 @@ class WordPressAPI:
                     "WordPress requires version 5.6+ or the Application Passwords plugin."
                 )
             else:
-                return False, f"Authentication failed: {response.status_code} - {response.reason}"
+                return (
+                    False,
+                    f"Authentication failed: {response.status_code} - {response.reason}",
+                )
         except requests.exceptions.RequestException as e:
             return False, f"Connection error: {str(e)}"
+
+    def run_diagnostics(self) -> Dict[str, any]:
+        """
+        Run comprehensive diagnostics on WordPress REST API connection.
+
+        Returns:
+            Dictionary with diagnostic results and recommendations
+        """
+        results = {"tests": [], "overall_status": "unknown", "recommendations": []}
+
+        # Test 1: Basic REST API availability
+        test1 = {"name": "REST API Availability", "status": "unknown", "message": ""}
+        try:
+            response = self.session.get(
+                f"{self.site_url}/wp-json/", timeout=10, auth=None
+            )
+            if response.status_code == 200:
+                test1["status"] = "pass"
+                test1["message"] = "REST API is accessible"
+            else:
+                test1["status"] = "fail"
+                test1["message"] = f"REST API returned status {response.status_code}"
+                results["recommendations"].append(
+                    "Contact your hosting provider - REST API may be disabled"
+                )
+        except requests.exceptions.RequestException as e:
+            test1["status"] = "fail"
+            test1["message"] = f"Cannot reach site: {str(e)}"
+            results["recommendations"].append(
+                "Check that the WordPress URL is correct and the site is online"
+            )
+        results["tests"].append(test1)
+
+        # Test 2: Public posts endpoint
+        test2 = {"name": "Public Posts Endpoint", "status": "unknown", "message": ""}
+        try:
+            response = self.session.get(
+                f"{self.site_url}/wp-json/wp/v2/posts", timeout=10, auth=None
+            )
+            test2["status"] = "pass" if response.status_code == 200 else "warning"
+            test2["message"] = f"Status {response.status_code}"
+            if response.status_code != 200:
+                results["recommendations"].append(
+                    "Posts endpoint not accessible - may indicate REST API restrictions"
+                )
+        except requests.exceptions.RequestException as e:
+            test2["status"] = "fail"
+            test2["message"] = f"Error: {str(e)}"
+        results["tests"].append(test2)
+
+        # Test 3: HTTPS check
+        test3 = {"name": "HTTPS Enabled", "status": "unknown", "message": ""}
+        if self.site_url.startswith("https://"):
+            test3["status"] = "pass"
+            test3["message"] = "Site uses HTTPS (required for Application Passwords)"
+        else:
+            test3["status"] = "fail"
+            test3["message"] = "Site uses HTTP - Application Passwords require HTTPS"
+            results["recommendations"].append(
+                "Enable SSL certificate on your hosting account. Most hosts offer free Let's Encrypt certificates."
+            )
+        results["tests"].append(test3)
+
+        # Test 4: Authentication
+        test4 = {"name": "Authentication", "status": "unknown", "message": ""}
+        try:
+            response = self.session.get(
+                f"{self.site_url}/wp-json/wp/v2/users/me", timeout=10
+            )
+            if response.status_code == 200:
+                test4["status"] = "pass"
+                user_data = response.json()
+                username = user_data.get("name", "Unknown")
+                test4["message"] = f"Authenticated as: {username}"
+            elif response.status_code == 401:
+                test4["status"] = "fail"
+                test4["message"] = "401 Unauthorized - Invalid credentials"
+                results["recommendations"].extend(
+                    [
+                        "Verify your WordPress username is correct (not email address)",
+                        "Regenerate your Application Password and try again",
+                        "Make sure you copied the password without spaces",
+                    ]
+                )
+            elif response.status_code == 406:
+                test4["status"] = "fail"
+                test4["message"] = "406 Not Acceptable - Server blocking request"
+                results["recommendations"].extend(
+                    [
+                        "mod_security or hosting firewall is blocking the request",
+                        "FIX #1: Go to WordPress Settings → Permalinks → Click 'Save Changes' (regenerates .htaccess)",
+                        "FIX #2 (GoDaddy): In hosting panel, go to Website Security → Firewall → Access Control → Allow URL Paths → Add '/wp/v2/'",
+                        "FIX #3: Contact hosting support and ask them to whitelist WordPress REST API endpoints",
+                        "FIX #4: Temporarily disable security plugins like Wordfence to test",
+                    ]
+                )
+            elif response.status_code == 403:
+                test4["status"] = "fail"
+                test4["message"] = (
+                    "403 Forbidden - Valid credentials but insufficient permissions"
+                )
+                results["recommendations"].append(
+                    "Your user account may not have sufficient permissions. Try with an Administrator account."
+                )
+            else:
+                test4["status"] = "fail"
+                test4["message"] = f"Status {response.status_code}: {response.reason}"
+        except requests.exceptions.RequestException as e:
+            test4["status"] = "fail"
+            test4["message"] = f"Connection error: {str(e)}"
+        results["tests"].append(test4)
+
+        # Test 5: Check for authorization header support
+        test5 = {"name": "Authorization Header", "status": "unknown", "message": ""}
+        # This is indicated by 406 errors, so we can infer from test 4
+        if test4["status"] == "fail" and "406" in test4["message"]:
+            test5["status"] = "fail"
+            test5["message"] = "Server not passing authorization headers"
+            results["recommendations"].append(
+                "Your server is stripping authorization headers. This is the most common cause of 406 errors."
+            )
+        elif test4["status"] == "pass":
+            test5["status"] = "pass"
+            test5["message"] = "Authorization headers working correctly"
+        else:
+            test5["status"] = "unknown"
+            test5["message"] = "Cannot determine - authentication test needed"
+        results["tests"].append(test5)
+
+        # Determine overall status
+        statuses = [test["status"] for test in results["tests"]]
+        if all(s == "pass" for s in statuses):
+            results["overall_status"] = "pass"
+        elif any(s == "fail" for s in statuses):
+            results["overall_status"] = "fail"
+        else:
+            results["overall_status"] = "warning"
+
+        # Add general recommendations if there are issues
+        if results["overall_status"] != "pass":
+            if not any(
+                "Settings → Permalinks" in r for r in results["recommendations"]
+            ):
+                results["recommendations"].append(
+                    "QUICK FIX TO TRY: Go to WordPress Dashboard → Settings → Permalinks → Click 'Save Changes' (this often fixes authorization issues)"
+                )
+
+        return results
 
     def get_media_items(self, per_page: int = 100) -> List[Dict]:
         """
@@ -87,7 +240,7 @@ class WordPressAPI:
                 response = self.session.get(
                     f"{self.site_url}/wp-json/wp/v2/media",
                     params={"per_page": per_page, "page": page},
-                    timeout=30
+                    timeout=30,
                 )
 
                 if response.status_code != 200:
@@ -123,13 +276,9 @@ class WordPressAPI:
         """
         try:
             with open(file_path, "rb") as f:
-                files = {
-                    "file": (file_path.name, f, "image/webp")
-                }
+                files = {"file": (file_path.name, f, "image/webp")}
                 response = self.session.post(
-                    f"{self.site_url}/wp-json/wp/v2/media",
-                    files=files,
-                    timeout=60
+                    f"{self.site_url}/wp-json/wp/v2/media", files=files, timeout=60
                 )
 
                 if response.status_code == 201:
@@ -158,7 +307,7 @@ class WordPressAPI:
                 response = self.session.get(
                     f"{self.site_url}/wp-json/wp/v2/posts",
                     params={"per_page": per_page, "page": page},
-                    timeout=30
+                    timeout=30,
                 )
 
                 if response.status_code != 200:
@@ -199,7 +348,7 @@ class WordPressAPI:
                 response = self.session.get(
                     f"{self.site_url}/wp-json/wp/v2/pages",
                     params={"per_page": per_page, "page": page},
-                    timeout=30
+                    timeout=30,
                 )
 
                 if response.status_code != 200:
@@ -237,7 +386,7 @@ class WordPressAPI:
             response = self.session.post(
                 f"{self.site_url}/wp-json/wp/v2/posts/{post_id}",
                 json={"content": content},
-                timeout=30
+                timeout=30,
             )
             return response.status_code == 200
         except requests.exceptions.RequestException:
@@ -258,7 +407,7 @@ class WordPressAPI:
             response = self.session.post(
                 f"{self.site_url}/wp-json/wp/v2/pages/{page_id}",
                 json={"content": content},
-                timeout=30
+                timeout=30,
             )
             return response.status_code == 200
         except requests.exceptions.RequestException:

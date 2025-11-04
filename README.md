@@ -43,18 +43,73 @@ cd /path/to/wordpress-image-replacer
 uv sync
 ```
 
+## Pre-Setup: Preparing Your WordPress Site
+
+**IMPORTANT**: Before running this tool, complete these steps on your WordPress site to ensure everything works smoothly.
+
+### Step 1: Verify HTTPS is Enabled ⚠️ REQUIRED
+
+Application Passwords **require HTTPS**. Check your site URL starts with `https://` (not `http://`).
+
+If you only have HTTP:
+- Contact your hosting provider to enable SSL
+- Most hosts offer free Let's Encrypt certificates
+- This usually takes 5-10 minutes to set up
+
+### Step 2: Check WordPress Version
+
+You need **WordPress 5.6 or later**:
+1. Log into WordPress Admin
+2. Check version at bottom-right or go to Dashboard → Updates
+3. Update if necessary
+
+### Step 3: Fix Authorization Headers (CRITICAL)
+
+This prevents 406 errors - **do this even if you're not having problems yet**:
+
+**Quick Fix (Works 70% of the time):**
+1. In WordPress Admin: Settings → Permalinks
+2. Don't change anything, just click **"Save Changes"**
+3. This regenerates `.htaccess` with correct authorization rules
+
+**GoDaddy Users (Required):**
+1. Log into GoDaddy hosting account
+2. Website Security → Firewall → Settings → Access Control
+3. Click "Allow URL Paths"
+4. Add: `/wp-json/wp/v2/`
+5. Click Allow
+
+**If You Use Security Plugins:**
+- **Wordfence**: Enable "Learning Mode" in WAF settings
+- **"Disable REST API" plugins**: Deactivate temporarily
+- **Other security plugins**: Check REST API isn't blocked
+
+### Step 4: Test REST API Works
+
+Open this URL in your browser (replace with your site):
+```
+https://your-site.com/wp-json/wp/v2/posts
+```
+
+✅ **Good**: You see JSON data (looks like code)
+❌ **Bad**: Error page or "Forbidden" message
+
+If blocked, contact hosting support: "Please enable WordPress REST API for Application Passwords"
+
 ## Configuration
 
 ### WordPress Setup
 
-1. **Enable Application Passwords** in WordPress:
-   - Go to Users → Profile
-   - Scroll to "Application Passwords"
+1. **Create Application Password** in WordPress:
+   - Go to Users → Your Profile
+   - Scroll to "Application Passwords" section
+   - If section is missing: HTTPS is not enabled (see Pre-Setup above)
    - Enter a name (e.g., "Image Replacer")
    - Click "Add New Application Password"
-   - Copy the generated password (you won't see it again!)
+   - **Copy the password immediately** (you won't see it again!)
+   - Save it securely
 
-2. **Edit config.json**:
+2. **Edit config.json** (or enter in the GUI):
 
 ```json
 {
@@ -115,25 +170,74 @@ The tool handles WordPress naming conventions:
 - ✅ **Progress Tracking**: See exactly what's happening in real-time
 - ✅ **Stop Button**: Cancel operation at any time
 
+## Using the Application
+
+### First Time Setup
+
+1. Launch the application: `uv run python main.py`
+2. Click **"Help: Setup App Password"** for step-by-step instructions
+3. Enter your WordPress credentials:
+   - WordPress URL (with https://)
+   - Username (NOT email address)
+   - Application Password (remove spaces)
+4. Click **"Test Connection"** to verify it works
+5. If you get errors, click **"Run Full Diagnostics"** for detailed help
+
+### Running Image Replacement
+
+1. Select the folder containing your WebP files
+2. Click **"Start Replacement"**
+3. Monitor progress in the log window
+4. When complete, export the log for your records
+5. Review changes on your WordPress site
+
 ## Troubleshooting
 
-### Connection Failed
+### Use the Built-in Diagnostics
 
-- Verify WordPress URL is correct (include `https://`)
-- Check Application Password is entered correctly
-- Ensure WordPress REST API is accessible
+The application includes powerful diagnostic tools:
+1. Click **"Run Full Diagnostics"** button
+2. Review the detailed test results in the log
+3. Follow the numbered recommendations
+4. Most issues are fixed by going to Settings → Permalinks → Save Changes
 
-### Upload Failed
+### Common Issues and Fixes
 
-- Check file permissions on WebP files
-- Verify WordPress has upload permissions
-- Check file size limits in WordPress
+**Problem: 406 Not Acceptable Error**
+- **Cause**: Server blocking authorization headers (mod_security or firewall)
+- **Fix 1**: WordPress Settings → Permalinks → Save Changes
+- **Fix 2**: GoDaddy users - whitelist `/wp-json/wp/v2/` in firewall
+- **Fix 3**: Contact hosting support about REST API access
+- **Fix 4**: Temporarily disable security plugins to test
 
-### No Matches Found
+**Problem: 401 Unauthorized Error**
+- **Cause**: Invalid credentials
+- **Fix 1**: Verify username is correct (not email)
+- **Fix 2**: Regenerate Application Password and copy it carefully
+- **Fix 3**: Remove all spaces from Application Password
+- **Fix 4**: Verify you're using Application Password, not regular password
 
-- Verify WebP filenames match PNG filenames (without extension)
-- Check that PNG files exist in WordPress media library
-- Try case-insensitive matching
+**Problem: Application Passwords Section Not Visible**
+- **Cause**: HTTPS not enabled
+- **Fix**: Enable SSL certificate in hosting panel (usually free)
+
+**Problem: REST API Not Accessible**
+- **Cause**: Hosting firewall or plugin blocking REST API
+- **Fix 1**: Test by visiting: `https://your-site.com/wp-json/wp/v2/posts`
+- **Fix 2**: Contact hosting support about enabling WordPress REST API
+- **Fix 3**: Check for "Disable REST API" plugins and deactivate
+
+**Problem: Connection Works But Upload Fails**
+- **Cause**: File permissions or upload limits
+- **Fix 1**: Check file permissions on WebP files
+- **Fix 2**: Verify WordPress media upload permissions
+- **Fix 3**: Check file size limits in WordPress settings
+
+**Problem: No Matches Found**
+- **Cause**: Filename mismatch between WebP and PNG files
+- **Fix 1**: Verify WebP filenames match PNG filenames (without extension)
+- **Fix 2**: Check that PNG files exist in WordPress media library
+- **Fix 3**: Filenames are case-insensitive (sunset.webp matches Sunset.png)
 
 ## Development
 
