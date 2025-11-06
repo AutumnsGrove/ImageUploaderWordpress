@@ -1,5 +1,7 @@
 # WordPress WebP Image Replacer
 
+> **⚠️ ARCHIVED**: This project is no longer maintained. Development was discontinued due to difficulties with WordPress REST API authentication and hosting compatibility issues.
+
 Automate replacing PNG images with compressed WebP versions in your WordPress media library and update all post/page references.
 
 ## Features
